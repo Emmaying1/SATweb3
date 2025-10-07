@@ -177,4 +177,5 @@ export const performWebSearch = async (query: string): Promise<WebSearchResult> 
     console.error("Error performing web search with Gemini API:", error);
     throw new Error("Failed to perform web search. Please try again later.");
   }
+
 };
