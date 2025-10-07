@@ -137,4 +137,5 @@ const SetTransactionPasswordModal: React.FC<SetTransactionPasswordModalProps> = 
     );
 };
 
+
 export default SetTransactionPasswordModal;
