@@ -88,4 +88,5 @@ const MiningRulesPage: React.FC<{
   );
 };
 
+
 export default MiningRulesPage;
