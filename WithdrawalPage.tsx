@@ -258,4 +258,5 @@ const WithdrawalPage: React.FC<WithdrawalPageProps> = ({ onBack, onNavigate }) =
   );
 };
 
+
 export default WithdrawalPage;
