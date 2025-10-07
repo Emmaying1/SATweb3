@@ -18,4 +18,5 @@ root.render(
       </MarketDataProvider>
     </ThemeProvider>
   </React.StrictMode>
+
 );
