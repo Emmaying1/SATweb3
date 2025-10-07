@@ -103,4 +103,5 @@ const MiningPage: React.FC<{ onBack: () => void; onNavigate: (view: 'mining_orde
   );
 };
 
+
 export default MiningPage;
