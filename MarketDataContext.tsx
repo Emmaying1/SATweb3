@@ -245,4 +245,5 @@ export const useMarketData = (): MarketDataContextType => {
     throw new Error('useMarketData must be used within a MarketDataProvider');
   }
   return context;
+
 };
