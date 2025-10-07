@@ -1,0 +1,248 @@
+import React, { createContext, useState, useEffect, useContext, ReactNode, useRef, useMemo } from 'react';
+import { MOCK_PAIRS, MOCK_ASSETS } from '../services/mockData';
+import { getInitialPrices } from '../services/geminiService';
+import type { CryptoPair, PortfolioAsset, Investment } from '../types';
+
+interface MiningStats {
+    fundsInCustody: number;
+    totalProfits: number;
+    ordersInCustody: number;
+    investedPlanIds: string[];
+}
+interface MarketDataContextType {
+  pairs: CryptoPair[];
+  assets: PortfolioAsset[];
+  totalBalance: number;
+  simulateDeposit: (symbol: string, amount: number) => void;
+  miningStats: MiningStats;
+  investments: Investment[];
+  addMiningInvestment: (investment: { amount: number; planId: string; }) => void;
+  simulateExchange: (fromSymbol: string, toSymbol: string, fromAmount: number) => { success: boolean, message?: string };
+}
+
+const MarketDataContext = createContext<MarketDataContextType | undefined>(undefined);
+
+export const MarketDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [pairs, setPairs] = useState<CryptoPair[]>([]);
+  const [assets, setAssets] = useState<PortfolioAsset[]>(MOCK_ASSETS);
+  const [totalBalance, setTotalBalance] = useState(0);
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  const trendsRef = useRef<Record<string, { direction: 'up' | 'down'; expiry: number }>>({});
+
+  // Effect 1: Initialize data with real prices and run simulation
+  useEffect(() => {
+    const initializeAndSimulate = async () => {
+      // Fetch real-time prices to override mocks
+      const symbols = MOCK_PAIRS.map(p => p.id.split('-')[0].toUpperCase());
+      const fetchedPrices = await getInitialPrices(symbols);
+
+      const initialPairs = MOCK_PAIRS.map(pair => {
+        const symbol = pair.id.split('-')[0].toUpperCase();
+        if (fetchedPrices[symbol]) {
+          return { ...pair, price: fetchedPrices[symbol] };
+        }
+        return pair; // Fallback to mock price if not fetched
+      });
+      setPairs(initialPairs);
+
+      // Start the simulation interval
+      const intervalId = setInterval(() => {
+        const now = Date.now();
+        const currentTrends = trendsRef.current;
+
+        // Update trends for each pair
+        initialPairs.forEach(pair => {
+          if (!currentTrends[pair.id] || now > currentTrends[pair.id].expiry) {
+            currentTrends[pair.id] = {
+              direction: Math.random() > 0.5 ? 'up' : 'down',
+              expiry: now + (Math.random() * 5 + 2) * 60 * 1000,
+            };
+          }
+        });
+
+        // Update pairs based on trends and volatility
+        setPairs(prevPairs =>
+          prevPairs.map(pair => {
+            const trend = currentTrends[pair.id];
+            if (!trend) return pair;
+            
+            const volatility = pair.volatility || 0.005;
+            const trendEffect = trend.direction === 'up' ? 0.2 : -0.2;
+            const randomFactor = (Math.random() - 0.5 + trendEffect) * volatility;
+            const newPrice = pair.price * (1 + randomFactor);
+
+            const newSparkline = [...pair.sparklineData.slice(1), newPrice];
+
+            // Calculate 7d change
+            const price7daysAgo = newSparkline[newSparkline.length - 8]; // 22nd element
+            let change7d = 0;
+            if (price7daysAgo > 0) {
+                change7d = ((newPrice - price7daysAgo) / price7daysAgo) * 100;
+            } else if (newPrice > 0) {
+                change7d = Infinity;
+            }
+
+            return {
+              ...pair,
+              price: newPrice > 0 ? newPrice : 0,
+              change24h: pair.change24h + (Math.random() - 0.5) * 0.05,
+              change7d: change7d,
+              volume24h: pair.volume24h * (1 + (Math.random() - 0.5) * 0.005),
+              sparklineData: newSparkline,
+            };
+          })
+        );
+      }, 1500);
+
+      return () => clearInterval(intervalId);
+    };
+
+    let cleanup: (() => void) | undefined;
+    initializeAndSimulate().then(cleanupFn => {
+      cleanup = cleanupFn;
+    });
+
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, []); // Run only once on mount
+
+  // Effect 2: Update assets and total balance when pairs change
+  useEffect(() => {
+    if (pairs.length === 0) return;
+
+    setAssets(prevAssets => {
+        const updatedAssets = prevAssets.map(asset => {
+            const matchingPair = pairs.find(p => p.base.toUpperCase() === asset.symbol.toUpperCase());
+            if (matchingPair) {
+                return {
+                    ...asset,
+                    priceUSD: matchingPair.price,
+                    change24h: matchingPair.change24h,
+                    valueUSD: asset.amount * matchingPair.price,
+                };
+            }
+            return asset;
+        });
+        
+        const newTotalBalance = updatedAssets.reduce((sum, asset) => sum + asset.valueUSD, 0);
+        setTotalBalance(newTotalBalance);
+        
+        return updatedAssets;
+    });
+  }, [pairs]);
+  
+  const miningStats = useMemo(() => {
+    const fundsInCustody = investments.reduce((sum, inv) => sum + inv.amount, 0);
+    const ordersInCustody = investments.length;
+    const investedPlanIds = investments.map(inv => inv.planId);
+    // TODO: Implement real profit calculation
+    const totalProfits = 0; 
+    return { fundsInCustody, totalProfits, ordersInCustody, investedPlanIds };
+  }, [investments]);
+
+  const simulateDeposit = (symbol: string, amount: number) => {
+    setAssets(prevAssets => {
+        let assetExists = false;
+        const updatedAssets = prevAssets.map(asset => {
+            if (asset.symbol === symbol) {
+                assetExists = true;
+                const newAmount = asset.amount + amount;
+                return {
+                    ...asset,
+                    amount: newAmount,
+                    valueUSD: newAmount * asset.priceUSD,
+                };
+            }
+            return asset;
+        });
+
+        if (!assetExists) {
+            const pair = pairs.find(p => p.base.toUpperCase() === symbol.toUpperCase());
+            if (pair) {
+                updatedAssets.push({
+                    id: pair.base.toLowerCase(),
+                    name: pair.base,
+                    symbol: symbol.toUpperCase(),
+                    amount: amount,
+                    priceUSD: pair.price,
+                    valueUSD: amount * pair.price,
+                    change24h: pair.change24h
+                });
+            }
+        }
+        
+        // Recalculate total balance from the newly updated assets
+        const newTotalBalance = updatedAssets.reduce((sum, asset) => sum + asset.valueUSD, 0);
+        setTotalBalance(newTotalBalance);
+
+        return updatedAssets;
+    });
+  };
+  
+  const simulateExchange = (fromSymbol: string, toSymbol: string, fromAmount: number): { success: boolean; message?: string } => {
+    if (fromSymbol === toSymbol) {
+        return { success: false, message: 'Cannot exchange the same asset.' };
+    }
+
+    const fromAsset = assets.find(a => a.symbol === fromSymbol);
+    const toAsset = assets.find(a => a.symbol === toSymbol);
+
+    if (!fromAsset || !toAsset) {
+        return { success: false, message: 'One or both assets not found in portfolio.' };
+    }
+
+    if (fromAsset.amount < fromAmount) {
+        return { success: false, message: `Insufficient ${fromSymbol} balance.` };
+    }
+    
+    const rate = fromAsset.priceUSD / toAsset.priceUSD;
+    const toAmount = fromAmount * rate;
+    
+    setAssets(prevAssets => {
+        const updatedAssets = prevAssets.map(asset => {
+            if (asset.symbol === fromSymbol) {
+                const newAmount = asset.amount - fromAmount;
+                return { ...asset, amount: newAmount, valueUSD: newAmount * asset.priceUSD };
+            }
+            if (asset.symbol === toSymbol) {
+                const newAmount = asset.amount + toAmount;
+                return { ...asset, amount: newAmount, valueUSD: newAmount * asset.priceUSD };
+            }
+            return asset;
+        });
+        
+        const newTotalBalance = updatedAssets.reduce((sum, asset) => sum + asset.valueUSD, 0);
+        setTotalBalance(newTotalBalance);
+
+        return updatedAssets;
+    });
+    
+    return { success: true };
+  };
+
+  const addMiningInvestment = (investment: { amount: number; planId: string; }) => {
+    const newInvestment: Investment = {
+        id: `inv-${Date.now()}`,
+        planId: investment.planId,
+        amount: investment.amount,
+        startTime: Date.now(),
+    };
+    setInvestments(prev => [...prev, newInvestment]);
+    simulateDeposit('USDT', -investment.amount);
+  };
+
+  return (
+    <MarketDataContext.Provider value={{ pairs, assets, totalBalance, simulateDeposit, miningStats, investments, addMiningInvestment, simulateExchange }}>
+      {children}
+    </MarketDataContext.Provider>
+  );
+};
+
+export const useMarketData = (): MarketDataContextType => {
+  const context = useContext(MarketDataContext);
+  if (context === undefined) {
+    throw new Error('useMarketData must be used within a MarketDataProvider');
+  }
+  return context;
+};

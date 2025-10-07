@@ -1,0 +1,125 @@
+import type { CryptoPair, Order, Trade, Candle, PortfolioAsset, MiningPlan } from '../types';
+
+// Helper to generate random sparkline data
+const generateSparkline = (): number[] => {
+    const data = [100];
+    for (let i = 1; i < 30; i++) {
+        const prev = data[i - 1];
+        const next = prev + (Math.random() - 0.5) * 8;
+        data.push(next < 0 ? 0 : next);
+    }
+    return data;
+};
+
+// --- MOCK CRYPTO PAIRS (Updated for 9/11/2025) ---
+export const MOCK_PAIRS: CryptoPair[] = [
+  { id: 'btc-usdt', base: 'Bitcoin', quote: 'USDT', price: 125500.75, change24h: 3.15, change7d: 10.51, volume24h: 42123456789, marketCap: 2450000000000, sparklineData: generateSparkline(), volatility: 0.005 },
+  { id: 'eth-usdt', base: 'Ethereum', quote: 'USDT', price: 8210.90, change24h: 5.52, change7d: 12.33, volume24h: 25098765432, marketCap: 985000000000, sparklineData: generateSparkline(), volatility: 0.007 },
+  { id: 'sol-usdt', base: 'Solana', quote: 'USDT', price: 450.25, change24h: -2.10, change7d: -8.14, volume24h: 5123456789, marketCap: 210000000000, sparklineData: generateSparkline(), volatility: 0.012 },
+  { id: 'bnb-usdt', base: 'BNB', quote: 'USDT', price: 815.00, change24h: 1.75, change7d: 4.20, volume24h: 3012345678, marketCap: 125000000000, sparklineData: generateSparkline(), volatility: 0.009 },
+  { id: 'xrp-usdt', base: 'XRP', quote: 'USDT', price: 1.12, change24h: 0.95, change7d: 1.55, volume24h: 2109876543, marketCap: 62000000000, sparklineData: generateSparkline(), volatility: 0.015 },
+  { id: 'doge-usdt', base: 'Dogecoin', quote: 'USDT', price: 0.45, change24h: 8.21, change7d: 25.43, volume24h: 1543210987, marketCap: 60000000000, sparklineData: generateSparkline(), volatility: 0.025 },
+  { id: 'trump-usdt', base: 'Trump', quote: 'USDT', price: 0.35, change24h: 15.75, change7d: 45.12, volume24h: 1234567890, marketCap: 15000000000, sparklineData: generateSparkline(), volatility: 0.035 },
+  { id: 'ada-usdt', base: 'Cardano', quote: 'USDT', price: 1.55, change24h: 4.30, change7d: 7.89, volume24h: 987654321, marketCap: 52000000000, sparklineData: generateSparkline(), volatility: 0.011 },
+  { id: 'avax-usdt', base: 'Avalanche', quote: 'USDT', price: 110.80, change24h: -3.50, change7d: -11.60, volume24h: 1234567890, marketCap: 45000000000, sparklineData: generateSparkline(), volatility: 0.014 },
+  { id: 'link-usdt', base: 'Chainlink', quote: 'USDT', price: 42.50, change24h: 6.80, change7d: 18.23, volume24h: 876543210, marketCap: 25000000000, sparklineData: generateSparkline(), volatility: 0.013 },
+  { id: 'dot-usdt', base: 'Polkadot', quote: 'USDT', price: 25.30, change24h: 2.90, change7d: 6.78, volume24h: 654321098, marketCap: 28000000000, sparklineData: generateSparkline(), volatility: 0.010 },
+];
+
+// --- MOCK PORTFOLIO ASSETS (Updated for 9/11/2025) ---
+export const MOCK_ASSETS: PortfolioAsset[] = [
+    { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', amount: 0.75, valueUSD: 94125.56, priceUSD: 125500.75, change24h: 3.15 },
+    { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', amount: 10.5, valueUSD: 86214.45, priceUSD: 8210.90, change24h: 5.52 },
+    { id: 'tether', name: 'Tether', symbol: 'USDT', amount: 25000.00, valueUSD: 25000.00, priceUSD: 1.00, change24h: 0.01 },
+    { id: 'solana', name: 'Solana', symbol: 'SOL', amount: 25.0, valueUSD: 11256.25, priceUSD: 450.25, change24h: -2.10 },
+];
+
+// --- MOCK MINING PLANS ---
+export const MINING_PLANS_DATA: MiningPlan[] = [
+  { id: '3-day', cycle: 3, yield: 10, minLimit: 100 },
+  { id: '10-day', cycle: 10, yield: 15, minLimit: 10000 },
+  { id: '30-day', cycle: 30, yield: 40, minLimit: 30000 },
+  { id: '60-day', cycle: 60, yield: 90, minLimit: 60000 },
+];
+
+
+// --- MOCK MARKET MOVERS (Updated for 9/11/2025) ---
+export const MOCK_MARKET_MOVERS: CryptoPair[] = [
+    { id: 'doge-usdt', base: 'Dogecoin', quote: 'USDT', price: 0.45, change24h: 8.21, change7d: 25.43, volume24h: 1543210987, marketCap: 60000000000, sparklineData: generateSparkline(), volatility: 0.025 },
+    { id: 'btc-usdt', base: 'Bitcoin', quote: 'USDT', price: 125500.75, change24h: 3.15, change7d: 10.51, volume24h: 42123456789, marketCap: 2450000000000, sparklineData: generateSparkline(), volatility: 0.005 },
+    { id: 'sol-usdt', base: 'Solana', quote: 'USDT', price: 450.25, change24h: -2.10, change7d: -8.14, volume24h: 5123456789, marketCap: 210000000000, sparklineData: generateSparkline(), volatility: 0.012 },
+];
+
+
+// --- GENERATION FUNCTIONS FOR DYNAMIC DATA ---
+
+export const generateCandles = (options: {
+  count?: number;
+  timeframeMinutes?: number;
+  basePrice: number;
+  volatilityRatio?: number;
+}): Candle[] => {
+  const {
+    count = 100,
+    timeframeMinutes = 1,
+    basePrice,
+    volatilityRatio = 0.005, // e.g., 0.5% base volatility per step
+  } = options;
+
+  const candles: Candle[] = [];
+  let price = basePrice;
+  const timeStepSeconds = timeframeMinutes * 60;
+  const now = Math.floor(Date.now() / 1000);
+  let time = now - (now % timeStepSeconds) - (count - 1) * timeStepSeconds;
+
+  const volatility = basePrice * volatilityRatio * Math.sqrt(timeframeMinutes);
+  const trend = (Math.random() - 0.5) * 0.1;
+
+  for (let i = 0; i < count; i++) {
+    const open = price;
+    const high = open + Math.random() * volatility;
+    const low = open - Math.random() * volatility;
+    const close = low + Math.random() * (high - low);
+    
+    candles.push({ time, open, high, low, close });
+    
+    price = close + (Math.random() - 0.5) * (volatility / 2) + trend * volatility;
+    if (price < 0) price = 0; // Floor price
+    time += timeStepSeconds;
+  }
+  return candles;
+};
+
+const createOrderLevel = (startPrice: number, direction: 1 | -1, count: number): Order[] => {
+    let price = startPrice;
+    const orders: Order[] = [];
+    for (let i = 0; i < count; i++) {
+        price += (Math.random() * (startPrice * 0.0002) * direction);
+        const amount = Math.random() * 1.5;
+        const total = price * amount;
+        orders.push({ price, amount, total });
+    }
+    return orders.sort((a,b) => direction === 1 ? a.price - b.price : b.price - a.price);
+};
+
+export const generateOrderBook = (midPrice: number, count = 50) => {
+    const bids = createOrderLevel(midPrice * 0.9995, -1, count);
+    const asks = createOrderLevel(midPrice * 1.0005, 1, count);
+    return { bids, asks };
+};
+
+export const generateTrades = (count = 50, basePrice: number): Trade[] => {
+    const trades: Trade[] = [];
+    let time = new Date();
+    for (let i = 0; i < count; i++) {
+        time.setSeconds(time.getSeconds() - Math.floor(Math.random() * 5));
+        trades.push({
+            id: `trade-${i}-${Date.now()}`,
+            price: basePrice + (Math.random() - 0.5) * (basePrice * 0.001),
+            amount: Math.random() * 0.5,
+            time: time.toLocaleTimeString(),
+            type: Math.random() > 0.5 ? 'buy' : 'sell'
+        });
+    }
+    return trades;
+};

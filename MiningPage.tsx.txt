@@ -1,0 +1,106 @@
+import React from 'react';
+import { useMarketData } from '../contexts/MarketDataContext';
+import { ArrowLeftIcon, DashboardIcon, USDTIcon, ListBulletIcon, QuestionMarkCircleIcon, HistoryIcon } from './icons';
+import { MiningPlan } from '../types';
+import { MINING_PLANS_DATA } from '../services/mockData';
+
+const MiningPage: React.FC<{ onBack: () => void; onNavigate: (view: 'mining_orders' | 'mining_rules' | 'mining_investment' | 'history', context?: { plan?: MiningPlan, initialTab?: 'mining' }) => void; }> = ({ onBack, onNavigate }) => {
+  const { miningStats } = useMarketData();
+  
+  const StatDisplay: React.FC<{ value: string | number; label: string; small?: boolean }> = ({ value, label, small = false }) => (
+    <div className={small ? 'text-center' : ''}>
+        <p className={`font-bold tracking-tight ${small ? 'text-xl' : 'text-3xl'}`}>{value}</p>
+        <p className="text-xs text-slate-400">{label}</p>
+    </div>
+  );
+  
+  const PlanCard: React.FC<{plan: MiningPlan}> = ({ plan }) => {
+    const isInvested = miningStats.investedPlanIds.includes(plan.id);
+    return (
+        <div className="bg-slate-800/50 rounded-lg p-4 flex items-center gap-4 hover:bg-slate-700/50 transition-colors duration-300">
+            <div className="flex-shrink-0">
+                <USDTIcon className="w-10 h-10"/>
+            </div>
+            <div className="flex-grow grid grid-cols-2 sm:grid-cols-4 items-center gap-4 text-sm">
+                <div>
+                    <p className="font-bold text-white">USDT</p>
+                    <p className="text-xs text-slate-400">Min. {plan.minLimit.toLocaleString()}</p>
+                </div>
+                <div className="text-center">
+                    <p className="font-bold text-sky-400 text-base sm:text-lg">{plan.yield}%</p>
+                    <p className="text-xs text-slate-400">Total Yield</p>
+                </div>
+                 <div className="text-center">
+                    <p className="font-bold text-white text-base sm:text-lg">{plan.cycle} <span className="font-normal text-sm">Days</span></p>
+                    <p className="text-xs text-slate-400">Cycle</p>
+                </div>
+                <div className="flex justify-end">
+                    <button 
+                        onClick={() => !isInvested && onNavigate('mining_investment', { plan })}
+                        disabled={isInvested}
+                        className={`px-4 py-2 rounded-md text-xs font-bold transition-colors w-24 text-center ${isInvested ? 'bg-green-500/80 text-white cursor-not-allowed' : 'bg-sky-500 hover:bg-sky-600 text-white'}`}
+                    >
+                        {isInvested ? 'Active' : 'Invest'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto text-white dark">
+        <header className="flex items-center justify-between py-4">
+            <button onClick={onBack} className="flex items-center space-x-2 text-sm font-medium text-slate-400 hover:text-white transition-colors p-2 -ml-2 rounded-md">
+                <ArrowLeftIcon className="w-6 h-6" />
+            </button>
+            <h1 className="text-xl font-bold">Lock-up Mining</h1>
+            <button onClick={onBack} className="p-2 rounded-full text-slate-400 hover:text-white transition-colors" aria-label="Go to Dashboard">
+                 <DashboardIcon className="w-6 h-6" />
+            </button>
+        </header>
+
+        <main className="space-y-8">
+            <div className="bg-slate-800 rounded-xl shadow-lg p-6 grid-pattern-bg">
+                <div className="flex justify-between items-start">
+                    <StatDisplay value={miningStats.fundsInCustody.toLocaleString(undefined, {maximumFractionDigits: 2})} label="Funds in Custody (USDT)" />
+                    <div className="flex space-x-2">
+                        <button onClick={() => onNavigate('mining_orders')} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/70 hover:bg-slate-600/70 rounded-md text-xs font-semibold"><ListBulletIcon className="w-4 h-4" /> Orders</button>
+                        <button onClick={() => onNavigate('history', { initialTab: 'mining' })} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/70 hover:bg-slate-600/70 rounded-md text-xs font-semibold"><HistoryIcon className="w-4 h-4" /> History</button>
+                        <button onClick={() => onNavigate('mining_rules')} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700/70 hover:bg-slate-600/70 rounded-md text-xs font-semibold"><QuestionMarkCircleIcon className="w-4 h-4"/> Rules</button>
+                    </div>
+                </div>
+                <div className="border-t border-slate-700/50 my-4"></div>
+                <div className="grid grid-cols-3 gap-4">
+                    <StatDisplay value="0.0000" label="Estimated Profits" small />
+                    <StatDisplay value={miningStats.totalProfits.toLocaleString(undefined, { minimumFractionDigits: 4 })} label="Total Profits" small />
+                    <StatDisplay value={miningStats.ordersInCustody} label="Orders in Custody" small />
+                </div>
+            </div>
+
+            <section>
+                <h2 className="text-lg font-bold text-slate-300 mb-4">Featured Products</h2>
+                <div className="space-y-3">
+                    {MINING_PLANS_DATA.map(plan => <PlanCard key={plan.id} plan={plan} />)}
+                </div>
+            </section>
+        </main>
+        
+      <style>{`
+        .grid-pattern-bg {
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 2rem 2rem;
+            background-position: center center;
+        }
+        @keyframes fade-in-fast { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scale-in { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .animate-fade-in-fast { animation: fade-in-fast 0.2s ease-out forwards; }
+        .animate-scale-in { animation: scale-in 0.2s ease-out forwards; }
+      `}</style>
+    </div>
+  );
+};
+
+export default MiningPage;

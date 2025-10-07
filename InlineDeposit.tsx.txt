@@ -1,0 +1,133 @@
+import React, { useState } from 'react';
+import { useMarketData } from '../contexts/MarketDataContext';
+import { CloseIcon } from './icons';
+
+const InlineDeposit: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { assets, simulateDeposit } = useMarketData();
+  
+  // Filter out stablecoins like USDT for deposit simulation
+  const depositableAssets = assets.filter(a => a.symbol !== 'USDT');
+  
+  const [selectedAssetSymbol, setSelectedAssetSymbol] = useState(depositableAssets[0]?.symbol || '');
+  const [amount, setAmount] = useState('');
+  const [error, setError] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const selectedAsset = assets.find(a => a.symbol === selectedAssetSymbol);
+
+  const handleDeposit = () => {
+    setError('');
+    const depositAmount = parseFloat(amount);
+
+    if (!selectedAssetSymbol) {
+        setError('Please select an asset to deposit.');
+        return;
+    }
+    if (isNaN(depositAmount) || depositAmount <= 0) {
+      setError('Please enter a valid, positive amount.');
+      return;
+    }
+
+    simulateDeposit(selectedAssetSymbol, depositAmount);
+    setIsSuccess(true);
+    
+    // Reset and close after a delay
+    setTimeout(() => {
+        onClose();
+    }, 2000);
+  };
+
+  return (
+    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-lg p-4 sm:p-6 animate-fade-in-slow">
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Deposit</h2>
+            <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700" aria-label="Close deposit form">
+                <CloseIcon className="w-5 h-5" />
+            </button>
+        </div>
+
+        {isSuccess ? (
+            <div className="flex flex-col items-center justify-center h-48 text-center animate-fade-in-fast">
+                <div className="w-16 h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mb-4">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Deposit Successful!</h3>
+                <p className="text-slate-500 dark:text-slate-400">{amount} {selectedAssetSymbol} has been added to your portfolio.</p>
+            </div>
+        ) : (
+            <div className="space-y-4">
+                <div>
+                    <label htmlFor="asset-select" className="text-sm font-medium text-slate-600 dark:text-slate-300">Select Asset</label>
+                    <div className="relative mt-1">
+                        <select
+                            id="asset-select"
+                            value={selectedAssetSymbol}
+                            onChange={(e) => setSelectedAssetSymbol(e.target.value)}
+                            className="w-full h-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md py-3 pl-12 pr-4 text-slate-900 dark:text-white font-semibold appearance-none focus:ring-2 focus:ring-sky-500 focus:outline-none cursor-pointer"
+                        >
+                            {depositableAssets.map(asset => (
+                                <option key={asset.id} value={asset.symbol}>{asset.name}</option>
+                            ))}
+                        </select>
+                         <img 
+                            src={`https://picsum.photos/seed/${selectedAsset?.symbol}/24`}
+                            alt={selectedAsset?.name} 
+                            className="w-6 h-6 rounded-full absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                        />
+                    </div>
+                </div>
+
+                <div>
+                    <label htmlFor="deposit-amount" className="text-sm font-medium text-slate-600 dark:text-slate-300">Amount</label>
+                    <div className="relative mt-1">
+                        <input
+                            id="deposit-amount"
+                            type="text"
+                            value={amount}
+                            onChange={(e) => {
+                                setError('');
+                                if (/^[0-9]*\.?[0-9]*$/.test(e.target.value)) {
+                                    setAmount(e.target.value);
+                                }
+                            }}
+                            placeholder="0.00"
+                            className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md py-3 pl-4 pr-20 text-slate-900 dark:text-white font-mono text-base"
+                        />
+                        <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 dark:text-slate-500 text-sm font-semibold">{selectedAssetSymbol}</span>
+                    </div>
+                     {error && <p className="text-red-500 dark:text-red-400 text-xs mt-1">{error}</p>}
+                </div>
+
+                <div className="flex items-center justify-end space-x-3 pt-4">
+                    <button onClick={onClose} className="px-6 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition-colors">
+                        Cancel
+                    </button>
+                    <button onClick={handleDeposit} className="px-6 py-2.5 text-sm font-semibold text-white bg-sky-500 hover:bg-sky-600 rounded-md transition-colors">
+                        Confirm Deposit
+                    </button>
+                </div>
+            </div>
+        )}
+        <style>{`
+            @keyframes fade-in-slow {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in-slow {
+                animation: fade-in-slow 0.3s ease-out forwards;
+            }
+            @keyframes fade-in-fast {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            .animate-fade-in-fast {
+                animation: fade-in-fast 0.2s ease-out forwards;
+            }
+        `}</style>
+    </div>
+  );
+};
+
+export default InlineDeposit;

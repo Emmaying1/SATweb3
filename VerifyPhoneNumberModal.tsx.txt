@@ -1,0 +1,213 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { CloseIcon, PhoneIcon } from './icons';
+
+interface VerifyPhoneNumberModalProps {
+    onClose: () => void;
+    onSuccess: (phoneNumber: string) => void;
+}
+
+const VerifyPhoneNumberModal: React.FC<VerifyPhoneNumberModalProps> = ({ onClose, onSuccess }) => {
+    const [step, setStep] = useState<'phone' | 'code'>('phone');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [verificationCode, setVerificationCode] = useState('');
+    
+    const [isSending, setIsSending] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+    
+    const [countdown, setCountdown] = useState(60);
+    const [isCountingDown, setIsCountingDown] = useState(false);
+
+    const [errors, setErrors] = useState<{ phone?: string; code?: string }>({});
+    
+    const phoneInputRef = useRef<HTMLInputElement>(null);
+    const codeInputRef = useRef<HTMLInputElement>(null);
+
+    // Countdown timer effect
+    useEffect(() => {
+        if (!isCountingDown) return;
+        if (countdown === 0) {
+            setIsCountingDown(false);
+            return;
+        }
+        const timerId = setTimeout(() => {
+            setCountdown(countdown - 1);
+        }, 1000);
+        return () => clearTimeout(timerId);
+    }, [countdown, isCountingDown]);
+    
+    // Focus management effect
+    useEffect(() => {
+        if (step === 'phone') {
+            phoneInputRef.current?.focus();
+        } else if (step === 'code') {
+            codeInputRef.current?.focus();
+        }
+    }, [step]);
+    
+    const validatePhoneNumber = (): boolean => {
+        // Simple regex for international phone numbers starting with +
+        const phoneRegex = /^\+\d{10,15}$/;
+        if (!phoneRegex.test(phoneNumber.replace(/[\s()-]/g, ''))) {
+            setErrors({ phone: 'Please enter a valid number with country code (e.g., +15555551234).' });
+            return false;
+        }
+        setErrors({});
+        return true;
+    };
+    
+    const handleSendCode = () => {
+        if (!validatePhoneNumber()) return;
+        
+        setIsSending(true);
+        // Simulate API call to send code
+        setTimeout(() => {
+            setIsSending(false);
+            setStep('code');
+            setIsCountingDown(true);
+            setCountdown(60);
+        }, 1000);
+    };
+
+    const handleResendCode = () => {
+        if (isCountingDown) return;
+        // Don't need to re-validate, just resend
+        setIsCountingDown(true);
+        setCountdown(60);
+        // Simulate API call...
+    };
+    
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (verificationCode.length !== 6) {
+            setErrors({ code: 'Verification code must be 6 digits.' });
+            return;
+        }
+        setErrors({});
+        
+        setIsVerifying(true);
+        // Simulate API call to verify code
+        setTimeout(() => {
+            if (verificationCode === '123456') { // Mock success code
+                setIsVerifying(false);
+                onSuccess(phoneNumber);
+            } else {
+                setIsVerifying(false);
+                setErrors({ code: 'Code incorrect — try again.' });
+            }
+        }, 1500);
+    };
+    
+    const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        if (/^\d*$/.test(value) && value.length <= 6) {
+            setVerificationCode(value);
+            if (errors.code) setErrors({});
+        }
+    };
+
+    return (
+        <div
+            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in-fast"
+            role="dialog" aria-modal="true" onClick={onClose}
+        >
+            <div
+                className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-lg w-full max-w-sm m-4 relative animate-scale-in"
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <PhoneIcon className="w-5 h-5" />
+                        Verify Phone Number
+                    </h2>
+                    <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700" aria-label="Close modal">
+                        <CloseIcon className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                    <div className="p-4 space-y-4">
+                        {step === 'phone' && (
+                            <>
+                                <div>
+                                    <label htmlFor="phone-number" className="text-sm font-medium text-slate-600 dark:text-slate-300">Enter phone number</label>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <input
+                                            ref={phoneInputRef}
+                                            id="phone-number"
+                                            type="tel"
+                                            value={phoneNumber}
+                                            onChange={(e) => { setPhoneNumber(e.target.value); if(errors.phone) setErrors({}); }}
+                                            placeholder="+1 (555) 555-0123"
+                                            className={`w-full bg-slate-100 dark:bg-slate-700 border rounded-md py-2 px-3 text-slate-900 dark:text-white font-mono text-sm ${errors.phone ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'}`}
+                                            autoComplete="tel"
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={handleSendCode} 
+                                            disabled={isSending || !phoneNumber}
+                                            className="px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-sky-500 hover:bg-sky-600 text-white disabled:bg-slate-400 dark:disabled:bg-slate-600 flex-shrink-0"
+                                        >
+                                            {isSending ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Send code'}
+                                        </button>
+                                    </div>
+                                    {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 text-center">Carrier SMS rates may apply.</p>
+                            </>
+                        )}
+
+                        {step === 'code' && (
+                             <>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    Verification code sent to <span className="font-semibold text-slate-700 dark:text-slate-300">{phoneNumber}</span>. 
+                                    <button type="button" onClick={() => setStep('phone')} className="ml-1 text-sky-500 hover:underline text-xs">Change number</button>
+                                </p>
+                                <div>
+                                    <label htmlFor="verification-code" className="text-sm font-medium text-slate-600 dark:text-slate-300">Enter verification code</label>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <input
+                                            ref={codeInputRef}
+                                            id="verification-code"
+                                            type="text"
+                                            value={verificationCode}
+                                            onChange={handleCodeChange}
+                                            placeholder="––––––"
+                                            maxLength={6}
+                                            className={`w-full bg-slate-100 dark:bg-slate-700 border rounded-md py-2 px-3 text-slate-900 dark:text-white font-mono text-lg tracking-[.5em] text-center ${errors.code ? 'border-red-500' : 'border-slate-200 dark:border-slate-600'}`}
+                                            autoComplete="one-time-code"
+                                        />
+                                         <button 
+                                            type="button" 
+                                            onClick={handleResendCode}
+                                            disabled={isCountingDown}
+                                            className="px-4 py-2 text-sm font-semibold rounded-md transition-colors bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-500 disabled:opacity-50 flex-shrink-0 w-28 text-center"
+                                        >
+                                            {isCountingDown ? `Resend in ${countdown}s` : 'Resend'}
+                                        </button>
+                                    </div>
+                                    {errors.code && <p className="text-red-500 text-xs mt-1">{errors.code}</p>}
+                                </div>
+
+                                <button 
+                                    type="submit" 
+                                    disabled={isVerifying || verificationCode.length !== 6}
+                                    className="w-full font-bold py-2.5 mt-4 rounded-md transition-colors bg-sky-500 hover:bg-sky-600 text-white text-sm disabled:bg-slate-400 dark:disabled:bg-slate-600 flex items-center justify-center"
+                                >
+                                     {isVerifying ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : 'Submit'}
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </form>
+            </div>
+             <style>{`
+                @keyframes fade-in-fast { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes scale-in { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                .animate-fade-in-fast { animation: fade-in-fast 0.2s ease-out forwards; }
+                .animate-scale-in { animation: scale-in 0.2s ease-out forwards; }
+            `}</style>
+        </div>
+    );
+};
+
+export default VerifyPhoneNumberModal;

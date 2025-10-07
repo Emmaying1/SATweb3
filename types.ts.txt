@@ -1,0 +1,115 @@
+// FIX: Removed self-import of 'MiningPlan' which was causing a conflict with the local declaration.
+
+export interface CryptoPair {
+  id: string;
+  base: string;
+  quote: string;
+  price: number;
+  change24h: number;
+  change7d: number;
+  volume24h: number;
+  marketCap: number;
+  sparklineData: number[];
+  volatility: number;
+}
+
+export interface Order {
+  price: number;
+  amount: number;
+  total: number;
+}
+
+export interface Trade {
+  id: string;
+  price: number;
+  amount: number;
+  time: string;
+  type: 'buy' | 'sell';
+}
+
+export interface Candle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+export interface PortfolioAsset {
+  id: string;
+  name: string;
+  symbol: string;
+  amount: number;
+  valueUSD: number;
+  priceUSD: number;
+  change24h: number;
+}
+
+export interface AIAnalysis {
+    sentiment: 'Bullish' | 'Bearish' | 'Neutral';
+    confidenceScore: number;
+    summary: string;
+    keyFactors: {
+        factor: string;
+        impact: 'Positive' | 'Negative' | 'Neutral';
+    }[];
+    shortTermOutlook: string;
+}
+
+export interface OptionTrade {
+  id: string;
+  pair: string;
+  direction: 'higher' | 'lower';
+  entryPrice: number;
+  closePrice?: number;
+  amount: number;
+  profitPercentage: number;
+  payout: number;
+  status: 'active' | 'win' | 'loss';
+  entryTime: number; // timestamp
+  expiryTime: number; // timestamp
+}
+
+export interface MiningPlan {
+  id: string;
+  cycle: number;
+  yield: number;
+  minLimit: number;
+}
+
+export interface Investment {
+  id: string;
+  planId: string;
+  amount: number;
+  startTime: number; // JS timestamp
+}
+
+export interface NewsArticle {
+  title: string;
+  summary: string;
+  url: string;
+  source: string;
+  publishedDate: string;
+}
+
+export interface GroundingChunk {
+  web?: {
+    uri: string;
+    title: string;
+  };
+}
+
+export interface WebSearchResult {
+  summary: string;
+  sources: GroundingChunk[];
+}
+
+
+// Centralized View Types
+export type View = 'dashboard' | 'market' | 'trade' | 'options' | 'ai_assistant' | 'settings' | 'profile' | 'withdraw' | 'mining' | 'mining_rules' | 'mining_orders' | 'mining_investment' | 'history';
+
+export interface ViewContext {
+  pair?: CryptoPair;
+  plan?: MiningPlan;
+  initialTab?: 'deposits' | 'withdrawals' | 'mining' | 'options';
+}

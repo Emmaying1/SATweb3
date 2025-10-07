@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartAirTrade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom scrollbar for a better dark mode aesthetic */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .dark ::-webkit-scrollbar-track {
+        background: #1e293b; /* slate-800 */
+      }
+      .dark ::-webkit-scrollbar-thumb {
+        background: #475569; /* slate-600 */
+        border-radius: 3px;
+      }
+      .dark ::-webkit-scrollbar-thumb:hover {
+        background: #64748b; /* slate-500 */
+      }
+
+      .light ::-webkit-scrollbar-track {
+        background: #e2e8f0; /* slate-200 */
+      }
+      .light ::-webkit-scrollbar-thumb {
+        background: #94a3b8; /* slate-400 */
+        border-radius: 3px;
+      }
+      .light ::-webkit-scrollbar-thumb:hover {
+        background: #64748b; /* slate-500 */
+      }
+      
+      /* Custom background */
+      body {
+        background-image: url('https://source.unsplash.com/random/1920x1080/?bitcoin,motherboard,circuit');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: -1;
+      }
+
+      html.light body::before {
+        background-color: rgba(241, 245, 249, 0.85); /* slate-100 with opacity */
+      }
+      
+      html.dark body::before {
+        background-color: rgba(15, 23, 42, 0.85); /* slate-900 with opacity */
+      }
+
+      /* Price flash animations */
+      @keyframes flash-green-bg {
+        from { background-color: rgba(16, 185, 129, 0.4); }
+        to { background-color: transparent; }
+      }
+      @keyframes flash-red-bg {
+        from { background-color: rgba(239, 68, 68, 0.4); }
+        to { background-color: transparent; }
+      }
+      .flash-green {
+        animation: flash-green-bg 0.7s ease-out;
+      }
+      .flash-red {
+        animation: flash-red-bg 0.7s ease-out;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "recharts": "https://aistudiocdn.com/recharts@^3.2.0",
+    "lightweight-charts": "https://aistudiocdn.com/lightweight-charts@^4.2.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

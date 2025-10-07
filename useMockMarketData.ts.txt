@@ -1,0 +1,99 @@
+import { useState, useEffect } from 'react';
+import { generateCandles, generateOrderBook, generateTrades } from '../services/mockData';
+import type { Candle, Order, Trade, CryptoPair } from '../types';
+
+interface MarketData {
+  chartData: Candle[];
+  orderBook: { bids: Order[]; asks: Order[] };
+  tradeHistory: Trade[];
+}
+
+const useMockMarketData = (pair: CryptoPair, timeframeMinutes: number = 1) => {
+  const [marketData, setMarketData] = useState<MarketData>({
+    chartData: [],
+    orderBook: { bids: [], asks: [] },
+    tradeHistory: []
+  });
+
+  useEffect(() => {
+    if (!pair || !pair.price) return;
+
+    // Initial data load
+    const initialChartData = generateCandles({
+        count: 150,
+        timeframeMinutes: timeframeMinutes,
+        basePrice: pair.price,
+        volatilityRatio: 0.004
+    });
+    const lastPrice = initialChartData.length > 0 ? initialChartData[initialChartData.length - 1].close : pair.price;
+    
+    setMarketData({
+      chartData: initialChartData,
+      orderBook: generateOrderBook(lastPrice),
+      tradeHistory: generateTrades(50, lastPrice),
+    });
+
+    const timeStepSeconds = timeframeMinutes * 60;
+
+    const intervalId = setInterval(() => {
+      setMarketData(prevData => {
+        if (prevData.chartData.length === 0) return prevData;
+
+        // --- Update Chart Data ---
+        const newChartData = [...prevData.chartData];
+        let lastCandle = newChartData[newChartData.length - 1];
+        
+        const now = Math.floor(Date.now() / 1000);
+        
+        const volatilityFactor = 0.0002;
+
+        // Determine if we need a new candle or to update the last one
+        if (now >= lastCandle.time + timeStepSeconds) {
+            // New candle
+            const open = lastCandle.close;
+            const close = open + (Math.random() - 0.5) * (open * volatilityFactor * 50) * Math.sqrt(timeframeMinutes);
+            const high = Math.max(open, close, lastCandle.close);
+            const low = Math.min(open, close, lastCandle.close);
+            const newCandle: Candle = {
+                time: lastCandle.time + timeStepSeconds,
+                open, high, low, close
+            };
+            newChartData.shift();
+            newChartData.push(newCandle);
+        } else {
+            // Update last candle
+            const newClose = lastCandle.close + (Math.random() - 0.5) * (lastCandle.close * volatilityFactor) * Math.sqrt(timeframeMinutes);
+            lastCandle.close = newClose > 0 ? newClose : 0;
+            lastCandle.high = Math.max(lastCandle.high, newClose);
+            lastCandle.low = Math.min(lastCandle.low, newClose);
+            newChartData[newChartData.length - 1] = { ...lastCandle };
+        }
+
+        const currentPrice = newChartData[newChartData.length - 1].close;
+        
+        // --- Update Order Book & Trade History (simplified) ---
+        const newOrderBook = generateOrderBook(currentPrice);
+        const newTrade: Trade = {
+          id: `trade-${Date.now()}`,
+          price: currentPrice + (Math.random() - 0.5) * (currentPrice * 0.0001),
+          amount: Math.random() * 0.1,
+          time: new Date().toLocaleTimeString(),
+          type: Math.random() > 0.5 ? 'buy' : 'sell'
+        };
+        const newTradeHistory = [newTrade, ...prevData.tradeHistory.slice(0, 49)];
+        
+        return {
+          chartData: newChartData,
+          orderBook: newOrderBook,
+          tradeHistory: newTradeHistory,
+        };
+      });
+    }, 2000); // Update every 2 seconds
+
+    return () => clearInterval(intervalId);
+  }, [pair, timeframeMinutes]);
+
+  return marketData;
+};
+
+export default useMockMarketData;

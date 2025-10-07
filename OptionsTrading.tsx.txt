@@ -1,0 +1,226 @@
+import React, { useState, useEffect } from 'react';
+import TradingViewWidget from './TradingViewWidget';
+import type { OptionTrade, CryptoPair } from '../types';
+import { ArrowUpIcon, ArrowDownIcon, SettingsIcon } from './icons';
+import { MOCK_PAIRS } from '../services/mockData';
+import { useMarketData } from '../contexts/MarketDataContext';
+import TradeExecutionModal from './TradeExecutionModal';
+
+type TradeResultTab = 'active' | 'history';
+
+export const OPTIONS_CONFIG = {
+  30: { duration: 30, profit: 30, minAmount: 50 },
+  60: { duration: 60, profit: 60, minAmount: 10000 },
+  90: { duration: 90, profit: 90, minAmount: 20000 },
+};
+
+interface OptionsTradingProps {
+  initialPair?: CryptoPair;
+}
+
+const OptionsTrading: React.FC<OptionsTradingProps> = ({ initialPair }) => {
+  const { pairs } = useMarketData();
+  const [selectedPair, setSelectedPair] = useState<CryptoPair>(() => {
+    // Initialize state safely, using initialPair or falling back to the first pair from context or static data
+    return initialPair || (pairs.length > 0 ? pairs[0] : MOCK_PAIRS[0]);
+  });
+  
+  const [activeTrades, setActiveTrades] = useState<OptionTrade[]>([]);
+  const [tradeHistory, setTradeHistory] = useState<OptionTrade[]>([]);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [activeTab, setActiveTab] = useState<TradeResultTab>('active');
+
+  const [tradeExecutionState, setTradeExecutionState] = useState<{ isOpen: boolean; direction: 'higher' | 'lower' | null }>({ isOpen: false, direction: null });
+
+  const currentPrice = selectedPair.price;
+
+  // Helper to format symbol for TradingView
+  const getTradingViewSymbol = (pair: CryptoPair): string => {
+    const symbols: { [key: string]: string } = {
+        'Bitcoin': 'BTC', 'Ethereum': 'ETH', 'Solana': 'SOL', 'BNB': 'BNB',
+        'XRP': 'XRP', 'Dogecoin': 'DOGE', 'Trump': 'TRUMP', 'Cardano': 'ADA', 'Avalanche': 'AVAX',
+        'Chainlink': 'LINK', 'Polkadot': 'DOT',
+    };
+    const baseSymbol = symbols[pair.base] || pair.base.substring(0, 3).toUpperCase();
+    const quoteSymbol = pair.quote;
+    // Using a common exchange prefix for TradingView compatibility
+    return `BINANCE:${baseSymbol}${quoteSymbol}`;
+  };
+  
+  useEffect(() => {
+    // Effect to sync with `initialPair` prop from navigation
+    if (initialPair && initialPair.id !== selectedPair.id) {
+      setSelectedPair(initialPair);
+    }
+  }, [initialPair, selectedPair.id]);
+
+  useEffect(() => {
+    // Effect to sync `selectedPair` with live data from `MarketDataContext`
+    const updatedPairData = pairs.find(p => p.id === selectedPair.id);
+    if (updatedPairData && updatedPairData.price !== selectedPair.price) {
+      setSelectedPair(updatedPairData);
+    }
+  }, [pairs, selectedPair.id, selectedPair.price]);
+
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (activeTrades.length === 0) return;
+
+    const checkExpiredTrades = () => {
+      const now = Date.now();
+      const expiredTrades = activeTrades.filter(trade => now >= trade.expiryTime);
+
+      if (expiredTrades.length > 0) {
+        const updatedHistory = [...tradeHistory];
+        const stillActiveTrades = activeTrades.filter(trade => now < trade.expiryTime);
+        
+        expiredTrades.forEach(trade => {
+            const isWin = (trade.direction === 'higher' && currentPrice > trade.entryPrice) ||
+                        (trade.direction === 'lower' && currentPrice < trade.entryPrice);
+            
+            updatedHistory.unshift({
+                ...trade,
+                status: isWin ? 'win' : 'loss',
+                closePrice: currentPrice,
+            });
+        });
+        
+        setActiveTrades(stillActiveTrades);
+        setTradeHistory(updatedHistory);
+      }
+    };
+    checkExpiredTrades();
+  }, [currentTime, activeTrades, currentPrice, tradeHistory, selectedPair.price]);
+
+
+  const handleTradeStart = (newTrade: OptionTrade) => {
+    setActiveTrades(prev => [...prev, newTrade]);
+  };
+
+  const formatTime = (ms: number) => {
+    if (ms <= 0) return '00:00';
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${seconds}`;
+  };
+
+  const TradeRow: React.FC<{trade: OptionTrade}> = ({ trade }) => {
+    const isWin = trade.status === 'win';
+    const isLoss = trade.status === 'loss';
+    const isActive = trade.status === 'active';
+    
+    return (
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 items-center text-xs sm:text-sm py-3 px-4 border-b border-slate-200 dark:border-slate-700/50">
+            <div className="font-semibold text-slate-900 dark:text-white">{trade.pair}</div>
+            <div className={`font-semibold capitalize ${trade.direction === 'higher' ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>{trade.direction}</div>
+            <div className="font-mono text-slate-600 dark:text-slate-300">{trade.entryPrice.toFixed(2)}</div>
+            <div className="font-mono text-slate-600 dark:text-slate-300 hidden sm:block">{trade.closePrice?.toFixed(2) || '---'}</div>
+            <div className={`font-semibold text-center ${isWin ? 'text-green-500 dark:text-green-400' : isLoss ? 'text-red-500 dark:text-red-400' : 'text-sky-500 dark:text-sky-400'}`}>
+              {isActive ? formatTime(trade.expiryTime - currentTime) : trade.status.toUpperCase()}
+            </div>
+            <div className="font-mono text-right">
+              {isWin ? `+${(trade.payout - trade.amount).toFixed(2)}` : isLoss ? `-${trade.amount.toFixed(2)}` : `${trade.payout.toFixed(2)}`}
+            </div>
+        </div>
+    );
+  };
+
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Header with coin selector */}
+       <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-md p-3 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center space-x-3">
+          <img src={`https://picsum.photos/seed/${selectedPair.base}/40`} alt={selectedPair.base} className="w-10 h-10 rounded-full" />
+          <div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">{selectedPair.base}/{selectedPair.quote}</h1>
+          </div>
+        </div>
+        <div className="relative w-full sm:w-auto">
+          <select
+            value={selectedPair.id}
+            onChange={(e) => {
+              const newPair = pairs.find(p => p.id === e.target.value);
+              if (newPair) setSelectedPair(newPair);
+            }}
+            className="w-full sm:w-auto bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md py-2 pl-3 pr-8 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 appearance-none"
+            aria-label="Select cryptocurrency pair"
+          >
+            {pairs.map(p => <option key={p.id} value={p.id}>{p.base}/{p.quote}</option>)}
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+            <svg className="w-4 h-4 fill-current text-slate-400" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path></svg>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex flex-col lg:grid lg:grid-cols-12 gap-4 flex-grow">
+        {/* History Table */}
+        <div className="lg:col-span-8 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-md order-2 lg:order-1 flex flex-col">
+          <div className="flex border-b border-slate-200 dark:border-slate-700">
+              <button onClick={() => setActiveTab('active')} className={`px-4 py-3 text-sm font-semibold ${activeTab === 'active' ? 'text-slate-900 dark:text-white border-b-2 border-sky-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                  Active Positions ({activeTrades.length})
+              </button>
+              <button onClick={() => setActiveTab('history')} className={`px-4 py-3 text-sm font-semibold ${activeTab === 'history' ? 'text-slate-900 dark:text-white border-b-2 border-sky-500' : 'text-slate-500 dark:text-slate-400'}`}>
+                  Trade History
+              </button>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs text-slate-500 dark:text-slate-400 px-4 py-2 bg-slate-100/50 dark:bg-slate-800/50">
+            <span>Pair</span>
+            <span>Direction</span>
+            <span>Entry</span>
+            <span className="hidden sm:block">Close</span>
+            <span className="text-center">Status</span>
+            <span className="text-right">Payout</span>
+          </div>
+          <div className="flex-grow overflow-y-auto">
+            {activeTab === 'active' && activeTrades.map(trade => <TradeRow key={trade.id} trade={trade}/>)}
+            {activeTab === 'history' && tradeHistory.map(trade => <TradeRow key={trade.id} trade={trade}/>)}
+              {activeTab === 'active' && activeTrades.length === 0 && <p className="text-center text-slate-500 py-8">No active positions.</p>}
+              {activeTab === 'history' && tradeHistory.length === 0 && <p className="text-center text-slate-500 py-8">No trade history.</p>}
+          </div>
+        </div>
+
+        {/* Control Panel */}
+        <div className="lg:col-span-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-md p-4 flex flex-col order-1 lg:order-2">
+           <div className="h-96 bg-transparent rounded-md mb-4">
+                <TradingViewWidget symbol={getTradingViewSymbol(selectedPair)} />
+            </div>
+          
+          <div className="flex flex-col flex-grow justify-end space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                  <button onClick={() => setTradeExecutionState({ isOpen: true, direction: 'higher' })} className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-md transition-colors text-base flex items-center justify-center space-x-2">
+                      <ArrowUpIcon className="h-5 w-5" />
+                      <span>Buy Rise</span>
+                  </button>
+                  <button onClick={() => setTradeExecutionState({ isOpen: true, direction: 'lower' })} className="bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-md transition-colors text-base flex items-center justify-center space-x-2">
+                      <ArrowDownIcon className="h-5 w-5" />
+                      <span>Buy Low</span>
+                  </button>
+              </div>
+          </div>
+        </div>
+      </div>
+      {tradeExecutionState.isOpen && tradeExecutionState.direction && (
+          <TradeExecutionModal
+              isOpen={tradeExecutionState.isOpen}
+              onClose={() => setTradeExecutionState({ isOpen: false, direction: null })}
+              direction={tradeExecutionState.direction}
+              pair={selectedPair}
+              onTradeStart={handleTradeStart}
+              currentPrice={currentPrice}
+          />
+      )}
+    </div>
+  );
+};
+
+export default OptionsTrading;

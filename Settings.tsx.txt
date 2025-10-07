@@ -1,0 +1,171 @@
+import React, { useState } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import { SettingsIcon, ArrowLeftIcon, ChevronDownIcon } from './icons';
+
+// Reusable Card component for settings sections
+const Card: React.FC<{ title: string; children: React.ReactNode; }> = ({ title, children }) => (
+  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-lg">
+    <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700">
+      <h2 className="text-xl font-bold text-slate-900 dark:text-white">{title}</h2>
+    </div>
+    <div className="p-4 sm:p-6 space-y-6">
+      {children}
+    </div>
+  </div>
+);
+
+// Reusable ToggleSwitch component
+const ToggleSwitch: React.FC<{ label: string; enabled: boolean; onChange: (enabled: boolean) => void; }> = ({ label, enabled, onChange }) => (
+  <div className="flex items-center justify-between">
+    <span className="text-slate-600 dark:text-slate-300">{label}</span>
+    <button
+      onClick={() => onChange(!enabled)}
+      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${enabled ? 'bg-sky-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+      role="switch"
+      aria-checked={enabled}
+    >
+      <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+    </button>
+  </div>
+);
+
+// Reusable InputField for settings
+const InputField: React.FC<{ label: string; type: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void; unit: string }> = ({ label, type, value, onChange, unit }) => (
+  <div>
+    <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{label}</label>
+    <div className="relative mt-2">
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-md py-2 px-3 text-slate-900 dark:text-white font-mono"
+      />
+      <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 dark:text-slate-500 text-sm">{unit}</span>
+    </div>
+  </div>
+);
+
+
+const Settings: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { theme, setTheme } = useTheme();
+  const [isAppearanceExpanded, setIsAppearanceExpanded] = useState(false);
+
+  // State for notifications
+  const [notifications, setNotifications] = useState({
+    priceAlerts: true,
+    orderExecutions: true,
+    platformUpdates: false,
+  });
+
+  // State for trading defaults
+  const [tradingDefaults, setTradingDefaults] = useState({
+    orderSize: '25',
+    slippage: '0.5',
+  });
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div>
+        <button onClick={onBack} className="flex items-center space-x-2 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors p-2 -ml-2 rounded-md mb-4">
+          <ArrowLeftIcon className="w-5 h-5" />
+          <span>Back</span>
+        </button>
+        <div className="flex items-center space-x-3">
+          <SettingsIcon className="w-8 h-8 text-sky-500 dark:text-sky-400" />
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
+        </div>
+      </div>
+
+
+      {/* Appearance Settings */}
+      <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl shadow-lg">
+        <button
+            onClick={() => setIsAppearanceExpanded(!isAppearanceExpanded)}
+            className="w-full flex justify-between items-center p-4 sm:p-6 text-left"
+            aria-expanded={isAppearanceExpanded}
+            aria-controls="appearance-details"
+        >
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Appearance</h2>
+            <div className="flex items-center space-x-2">
+                <span className="text-slate-500 dark:text-slate-400 capitalize">{theme}</span>
+                <ChevronDownIcon className={`w-5 h-5 text-slate-500 transition-transform ${isAppearanceExpanded ? 'rotate-180' : ''}`} />
+            </div>
+        </button>
+        <div
+            id="appearance-details"
+            className={`grid transition-all duration-300 ease-in-out ${isAppearanceExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+        >
+          <div className="min-h-0">
+            <div className="px-4 sm:px-6 pb-6 border-t border-slate-200 dark:border-slate-700">
+                <div className="pt-6">
+                    <h3 className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-3">Theme</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            onClick={() => setTheme('light')}
+                            className={`p-4 rounded-lg border-2 text-center transition-all ${theme === 'light' ? 'border-sky-500 bg-sky-500/10' : 'border-slate-200 dark:border-slate-700 hover:border-sky-400'}`}
+                        >
+                            <div className="w-full h-12 bg-slate-100 border border-slate-200 rounded-md mb-2"></div>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">Light</span>
+                        </button>
+                        <button
+                            onClick={() => setTheme('dark')}
+                            className={`p-4 rounded-lg border-2 text-center transition-all ${theme === 'dark' ? 'border-sky-500 bg-sky-500/10' : 'border-slate-200 dark:border-slate-700 hover:border-sky-400'}`}
+                        >
+                            <div className="w-full h-12 bg-slate-900 border border-slate-700 rounded-md mb-2"></div>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">Dark</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Notification Settings */}
+      <Card title="Notifications">
+        <ToggleSwitch 
+          label="Price Alerts"
+          enabled={notifications.priceAlerts}
+          onChange={(value) => setNotifications(prev => ({ ...prev, priceAlerts: value }))}
+        />
+        <ToggleSwitch
+          label="Order Executions"
+          enabled={notifications.orderExecutions}
+          onChange={(value) => setNotifications(prev => ({ ...prev, orderExecutions: value }))}
+        />
+        <ToggleSwitch
+          label="Platform Updates"
+          enabled={notifications.platformUpdates}
+          onChange={(value) => setNotifications(prev => ({ ...prev, platformUpdates: value }))}
+        />
+      </Card>
+      
+      {/* Trading Defaults Settings */}
+      <Card title="Trading Defaults">
+        <InputField 
+          label="Default Order Size"
+          type="number"
+          value={tradingDefaults.orderSize}
+          onChange={(e) => setTradingDefaults(prev => ({ ...prev, orderSize: e.target.value }))}
+          unit="%"
+        />
+        <InputField
+          label="Default Slippage Tolerance"
+          type="number"
+          value={tradingDefaults.slippage}
+          onChange={(e) => setTradingDefaults(prev => ({ ...prev, slippage: e.target.value }))}
+          unit="%"
+        />
+      </Card>
+      
+      <div className="flex justify-end">
+        <button className="px-6 py-3 bg-sky-500 text-white font-semibold rounded-md hover:bg-sky-600 transition disabled:bg-slate-600">
+          Save Changes
+        </button>
+      </div>
+
+    </div>
+  );
+};
+
+export default Settings;

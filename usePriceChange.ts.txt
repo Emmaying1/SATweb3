@@ -1,0 +1,35 @@
+import { useState, useEffect, useRef } from 'react';
+
+export type PriceChangeStatus = 'up' | 'down' | 'neutral';
+
+/**
+ * A hook to detect price changes and provide a status for UI feedback.
+ * @param price The current price to monitor.
+ * @returns 'up', 'down', or 'neutral' status. The 'up'/'down' status lasts for 500ms.
+ */
+export const usePriceChange = (price: number): PriceChangeStatus => {
+  const [status, setStatus] = useState<PriceChangeStatus>('neutral');
+  const prevPriceRef = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    if (prevPriceRef.current !== undefined && price > 0) {
+      if (price > prevPriceRef.current) {
+        setStatus('up');
+      } else if (price < prevPriceRef.current) {
+        setStatus('down');
+      }
+      // No change if price is the same
+    }
+
+    // Set a timeout to reset the status to neutral, creating a flash effect
+    const timeoutId = setTimeout(() => setStatus('neutral'), 700);
+    
+    // Update the previous price ref for the next render
+    prevPriceRef.current = price;
+
+    // Cleanup the timeout on unmount or if the price changes again
+    return () => clearTimeout(timeoutId);
+  }, [price]);
+
+  return status;
+};
