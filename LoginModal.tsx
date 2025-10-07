@@ -357,4 +357,5 @@ const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess, onOpenResetPass
     );
 };
 
+
 export default LoginModal;
