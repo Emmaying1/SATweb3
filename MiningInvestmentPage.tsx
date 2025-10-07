@@ -170,4 +170,5 @@ const MiningInvestmentPage: React.FC<MiningInvestmentPageProps> = ({ onBack, onN
   );
 };
 
+
 export default MiningInvestmentPage;
