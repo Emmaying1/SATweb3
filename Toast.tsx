@@ -40,4 +40,5 @@ const Toast: React.FC<ToastProps> = ({ message, onClear }) => {
     );
 };
 
+
 export default Toast;
