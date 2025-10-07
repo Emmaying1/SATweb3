@@ -166,4 +166,5 @@ const HistoryPage: React.FC<HistoryPageProps> = ({ onBack, initialTab = 'deposit
     );
 };
 
+
 export default HistoryPage;
