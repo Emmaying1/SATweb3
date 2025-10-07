@@ -122,4 +122,5 @@ export const generateTrades = (count = 50, basePrice: number): Trade[] => {
         });
     }
     return trades;
+
 };
