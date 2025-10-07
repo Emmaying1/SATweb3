@@ -112,4 +112,5 @@ export interface ViewContext {
   pair?: CryptoPair;
   plan?: MiningPlan;
   initialTab?: 'deposits' | 'withdrawals' | 'mining' | 'options';
+
 }
