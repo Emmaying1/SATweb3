@@ -221,3 +221,4 @@ const CoinExchangeModal: React.FC<CoinExchangeModalProps> = ({ isOpen, onClose }
 };
 
 export default CoinExchangeModal;
+
