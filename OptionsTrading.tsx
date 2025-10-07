@@ -223,4 +223,5 @@ const OptionsTrading: React.FC<OptionsTradingProps> = ({ initialPair }) => {
   );
 };
 
+
 export default OptionsTrading;
