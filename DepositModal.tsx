@@ -214,4 +214,5 @@ const DepositModal: React.FC<DepositModalProps> = ({ onClose, onNavigate }) => {
   );
 };
 
+
 export default DepositModal;
