@@ -169,3 +169,4 @@ const Settings: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 };
 
 export default Settings;
+
