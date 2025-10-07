@@ -116,3 +116,4 @@ const MiningOrdersPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 };
 
 export default MiningOrdersPage;
+
