@@ -13,4 +13,5 @@ const FuturesTrading: React.FC = () => {
   );
 };
 
+
 export default FuturesTrading;
