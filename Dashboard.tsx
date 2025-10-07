@@ -312,4 +312,5 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     );
 };
 
+
 export default Dashboard;
