@@ -105,4 +105,5 @@ const TradePage: React.FC = () => {
   );
 };
 
+
 export default TradePage;
