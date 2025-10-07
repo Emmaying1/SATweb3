@@ -224,4 +224,5 @@ const TradingChart: React.FC<TradingChartProps> = ({ data, indicators = [] }) =>
   return <div ref={chartContainerRef} className="w-full h-full" />;
 };
 
+
 export default TradingChart;
