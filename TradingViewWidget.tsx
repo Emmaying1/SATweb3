@@ -82,4 +82,5 @@ const TradingViewWidget: React.FC<TradingViewWidgetProps> = ({ symbol }) => {
   return <div id={`tradingview_widget_container_${symbol}`} ref={container} className="w-full h-full" />;
 };
 
+
 export default memo(TradingViewWidget);
