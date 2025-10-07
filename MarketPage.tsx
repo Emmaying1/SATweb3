@@ -156,4 +156,5 @@ const MarketPage: React.FC<MarketPageProps> = ({ onNavigate }) => {
   );
 };
 
+
 export default MarketPage;
