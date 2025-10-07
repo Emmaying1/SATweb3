@@ -130,4 +130,5 @@ const InlineDeposit: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+
 export default InlineDeposit;
