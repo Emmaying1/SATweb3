@@ -61,4 +61,5 @@ const OrderBook: React.FC<OrderBookProps> = ({ bids, asks }) => {
   );
 };
 
+
 export default OrderBook;
