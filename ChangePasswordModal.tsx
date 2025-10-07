@@ -133,3 +133,4 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ onClose, onSu
 };
 
 export default ChangePasswordModal;
+
