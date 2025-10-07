@@ -33,3 +33,4 @@ export const usePriceChange = (price: number): PriceChangeStatus => {
 
   return status;
 };
+
