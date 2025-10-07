@@ -29,4 +29,5 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ trades }) => {
   );
 };
 
+
 export default TradeHistory;
