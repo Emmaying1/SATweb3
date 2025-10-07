@@ -96,4 +96,5 @@ const useMockMarketData = (pair: CryptoPair, timeframeMinutes: number = 1) => {
   return marketData;
 };
 
+
 export default useMockMarketData;
