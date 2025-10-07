@@ -110,4 +110,5 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
     );
 };
 
+
 export default ResetPasswordModal;
